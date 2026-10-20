@@ -1,6 +1,6 @@
 # Atualizar a situação dos pedidos no painel
 
-> Este guia é da versão anterior. Para instalar também agenda e reagendamento, use **[ATUALIZAR-AGENDA.md](ATUALIZAR-AGENDA.md)** e a migração 003, que já inclui a compatibilidade com a 002.
+> Este guia é da versão anterior. Para instalar também agenda e reagendamento, use **[ATUALIZAR-AGENDA.md](ATUALIZAR-AGENDA.md)** e as migrações 003 e 004, que incluem a compatibilidade com a 002 e a reserva desde o primeiro pedido.
 
 Esta atualização adiciona a ação **Ver pedido → Situação do pedido → Salvar situação**.
 

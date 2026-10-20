@@ -62,7 +62,7 @@ Agenda informada pelo solicitante:
 
 O formulário carrega os horários ao selecionar a data e não oferece horários passados no fuso `America/Sao_Paulo`. Pedidos podem ser feitos para hoje até os próximos 90 dias. O servidor repete a validação; alterar o HTML não permite solicitar horários fora da grade. Essa é uma janela de preferência de uma hora, não uma promessa de duração do serviço.
 
-**A solicitação fica pendente.** A equipe combina o serviço e a duração e confirma ou propõe reagendamento. Solicitações pendentes para a mesma preferência podem coexistir até avaliação da equipe. A confirmação é manual e ocupa a janela na agenda única do salão; o servidor impede duas confirmações na mesma vaga. Horários bloqueados ou ocupados não aparecem no formulário e são recusados também na gravação. Veja [ATUALIZAR-AGENDA.md](ATUALIZAR-AGENDA.md) para atualizar um site existente.
+**A solicitação fica pendente.** A equipe combina o serviço e a duração e confirma ou propõe reagendamento. O primeiro pedido pendente já reserva a vaga. Em contato mantém essa reserva; a equipe confirma o atendimento manualmente. O servidor impede novos pedidos para a mesma data e hora, inclusive em envios simultâneos. Cancelar ou marcar Reagendar libera a vaga anterior. Veja [CORRIGIR-RESERVA.md](CORRIGIR-RESERVA.md) para atualizar essa regra em uma agenda já instalada. Horários bloqueados ou ocupados não aparecem no formulário e são recusados também na gravação. Veja [ATUALIZAR-AGENDA.md](ATUALIZAR-AGENDA.md) para atualizar um site existente.
 
 ## Aviso automático por WhatsApp (opcional, desligado)
 

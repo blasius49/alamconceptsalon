@@ -138,7 +138,7 @@ CREATE OR REPLACE FUNCTION public.salon_slot_taken(p_date date,p_time time,p_exc
 LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
  SELECT EXISTS(SELECT 1 FROM public.salon_slot_blocks WHERE slot_date=p_date AND slot_time=p_time AND blocked)
  OR EXISTS(SELECT 1 FROM public.salon_bookings WHERE preferred_date=p_date AND preferred_time=p_time
-   AND status IN ('confirmado','concluido') AND (p_except IS NULL OR id<>p_except));
+   AND status IN ('pendente','em_contato','confirmado','concluido') AND (p_except IS NULL OR id<>p_except));
 $$;
 CREATE OR REPLACE FUNCTION public.salon_valid_slot(p_date date,p_time time) RETURNS boolean
 LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
@@ -150,10 +150,10 @@ LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
 $$;
 CREATE OR REPLACE FUNCTION public.salon_availability(p_date date) RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
- SELECT jsonb_build_object('blocks',coalesce((SELECT jsonb_agg(jsonb_build_object('time',to_char(slot_time,'HH24:MI'),'blocked',blocked))
+ SELECT jsonb_build_object('reservationPolicy','request-v1','blocks',coalesce((SELECT jsonb_agg(jsonb_build_object('time',to_char(slot_time,'HH24:MI'),'blocked',blocked))
  FROM public.salon_slot_blocks WHERE slot_date=p_date AND blocked),'[]'::jsonb),
  'bookings',coalesce((SELECT jsonb_agg(jsonb_build_object('preferredTime',to_char(preferred_time,'HH24:MI'),'status',status))
- FROM public.salon_bookings WHERE preferred_date=p_date AND status IN ('confirmado','concluido')),'[]'::jsonb));
+ FROM public.salon_bookings WHERE preferred_date=p_date AND status IN ('pendente','em_contato','confirmado','concluido')),'[]'::jsonb));
 $$;
 CREATE OR REPLACE FUNCTION public.salon_agenda(p_date date) RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
@@ -172,7 +172,7 @@ BEGIN
  SELECT * INTO v_row FROM public.salon_slot_blocks WHERE slot_date=p_date AND slot_time=p_time;
  v_version:=coalesce(v_row.version,0);
  IF v_version<>p_expected_version THEN RETURN jsonb_build_object('error','conflict'); END IF;
- IF p_blocked AND EXISTS(SELECT 1 FROM public.salon_bookings WHERE preferred_date=p_date AND preferred_time=p_time AND status IN ('confirmado','concluido'))
+ IF p_blocked AND EXISTS(SELECT 1 FROM public.salon_bookings WHERE preferred_date=p_date AND preferred_time=p_time AND status IN ('pendente','em_contato','confirmado','concluido'))
  THEN RETURN jsonb_build_object('error','occupied'); END IF;
  INSERT INTO public.salon_slot_blocks(slot_date,slot_time,blocked,reason) VALUES(p_date,p_time,p_blocked,trim(p_reason))
  ON CONFLICT(slot_date,slot_time) DO UPDATE SET blocked=excluded.blocked,reason=excluded.reason,version=salon_slot_blocks.version+1,updated_at=clock_timestamp();
@@ -208,7 +208,7 @@ BEGIN
  SELECT * INTO v_row FROM public.salon_bookings WHERE protocol=p_protocol FOR UPDATE;
  IF NOT FOUND THEN RETURN jsonb_build_object('error','not_found'); END IF;
  IF v_row.version<>p_expected_version THEN RETURN jsonb_build_object('error','conflict','booking',public.salon_booking_json(v_row.id)); END IF;
- IF p_status IN ('confirmado','concluido') AND v_row.status<>p_status AND public.salon_slot_taken(v_row.preferred_date,v_row.preferred_time,v_row.id)
+ IF p_status IN ('pendente','em_contato','confirmado','concluido') AND v_row.status<>p_status AND public.salon_slot_taken(v_row.preferred_date,v_row.preferred_time,v_row.id)
  THEN RETURN jsonb_build_object('error','unavailable'); END IF;
  IF v_row.status<>p_status THEN
   UPDATE public.salon_bookings SET status=p_status,version=version+1,updated_at=clock_timestamp() WHERE id=v_row.id;
@@ -239,7 +239,7 @@ END;
 $$;
 CREATE OR REPLACE FUNCTION public.salon_health() RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path=public,pg_temp AS $$
- SELECT jsonb_build_object('status','ok','schemaVersion',3,'tableAvailable',to_regclass('public.salon_bookings') IS NOT NULL
+ SELECT jsonb_build_object('status','ok','schemaVersion',4,'tableAvailable',to_regclass('public.salon_bookings') IS NOT NULL
  AND to_regclass('public.salon_notifications') IS NOT NULL AND to_regclass('public.salon_sessions') IS NOT NULL
  AND to_regclass('public.salon_rate_limits') IS NOT NULL AND to_regclass('public.salon_slot_blocks') IS NOT NULL
  AND EXISTS(SELECT 1 FROM public.salon_agenda_lock WHERE id=1) AND to_regclass('public.salon_reschedules') IS NOT NULL);

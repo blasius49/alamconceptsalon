@@ -53,7 +53,7 @@ Depois de salvar as variáveis, faça um novo deploy para que as funções receb
 
 No domínio gerado para seu site:
 
-1. Abra `/api/health`. Deve retornar `status: "ok"` e `backend: "netlify-supabase"` e `schemaVersion: 3`. Um resultado 503 significa que banco/configuração/acesso ainda não estão prontos; não é sucesso de instalação.
+1. Abra `/api/health`. Deve retornar `status: "ok"` e `backend: "netlify-supabase"` e `schemaVersion: 4`. Um resultado 503 significa que banco/configuração/acesso ainda não estão prontos; não é sucesso de instalação.
 2. Abra `/#agendamento`. Preencha um pedido de teste, usando dados fictícios enquanto o WhatsApp está desligado.
 3. Anote o protocolo `TA-…`.
 4. Abra `/admin`, entre com a senha da equipe e abra **Pedidos do site** para pesquisar o protocolo. Na aba **Agenda do dia**, escolha a data do atendimento para ver os clientes em cada horário. O pedido deve aparecer com nome, contato, data, horário e observações.
@@ -77,7 +77,7 @@ A reivindicação do aviso é atômica no Postgres. Uma falha ou reinício ambí
 - Os dados ficam no Supabase; não são mantidos em arquivos temporários das Functions.
 - O SQL usa tabelas com prefixo `salon_` e não remove tabelas de outros projetos.
 - Pedidos SQLite antigos não são migrados automaticamente. O arquivo local é preservado; caso existam pedidos reais nele, faça uma migração separada antes de mudar o fluxo em produção.
-- O painel tem **Agenda do dia** e **Pedidos do site**. Permite bloquear/liberar vagas, alterar situações e reagendar data e horário após contato manual pelo WhatsApp. A agenda é única para o salão; somente um atendimento confirmado/concluído ocupa cada janela. Pedidos pendentes não reservam vagas. O histórico conserva os reagendamentos; nenhuma dessas ações envia mensagens automaticamente.
+- O painel tem **Agenda do dia** e **Pedidos do site**. Permite bloquear/liberar vagas, alterar situações e reagendar data e horário após contato manual pelo WhatsApp. A agenda é única para o salão; o primeiro pedido pendente já reserva a janela e Em contato mantém a reserva. Cancelar ou marcar Reagendar libera a vaga anterior. O servidor impede um segundo pedido para a mesma data e hora. O histórico conserva os reagendamentos; nenhuma dessas ações envia mensagens automaticamente.
 - Considere região, retenção e backups conforme o projeto/planos escolhidos. As alterações são validadas localmente antes de o responsável aplicar na conta e conferir o deploy.
 
 ## Validação executada antes do pacote

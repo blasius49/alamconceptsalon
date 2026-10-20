@@ -28,7 +28,7 @@ test('diagnóstico diferencia variáveis ausentes e formatos incorretos sem faze
  }
 });
 test('chave legada continua aceita e saúde depende do esquema remoto, não apenas do formato',async()=>{
- const store=new SupabaseStore({env:{SUPABASE_URL:url,SUPABASE_SERVICE_ROLE_KEY:'  eyJfake-test-only  '},fetchImpl:async()=>new Response(JSON.stringify({status:'ok',tableAvailable:true,schemaVersion:3}))});
+ const store=new SupabaseStore({env:{SUPABASE_URL:url,SUPABASE_SERVICE_ROLE_KEY:'  eyJfake-test-only  '},fetchImpl:async()=>new Response(JSON.stringify({status:'ok',tableAvailable:true,schemaVersion:4}))});
  assert.equal(store.configured,true);
  const response=await createCloudHandler({env:{},store})(new Request('https://example.test/api/health'));
  assert.equal(response.status,200);assert.equal((await response.json()).status,'ok');
@@ -39,5 +39,5 @@ test('chave legada continua aceita e saúde depende do esquema remoto, não apen
 test('saúde exige migração da agenda: esquema antigo não sinaliza instalação completa',async()=>{
  const store=new SupabaseStore({env:{SUPABASE_URL:url,SUPABASE_SECRET_KEY:key},fetchImpl:async()=>new Response(JSON.stringify({status:'ok',tableAvailable:true,schemaVersion:2}))});
  const response=await createCloudHandler({env:{},store})(new Request('https://example.test/api/health'));
- assert.equal(response.status,503);assert.match((await response.json()).message,/003-agenda-reagendamento/);
+ assert.equal(response.status,503);assert.match((await response.json()).message,/004-reservar-pedido-pendente/);
 });

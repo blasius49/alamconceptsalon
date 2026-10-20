@@ -9,7 +9,7 @@ window.THAIS_DEMO = true;
   let blocks = [];
   try { blocks = JSON.parse(localStorage.getItem(key+'-blocks') || '[]'); if(!Array.isArray(blocks))blocks=[]; } catch {}
   const persistBlocks=()=>{try{localStorage.setItem(key+'-blocks',JSON.stringify(blocks));}catch{}};
-  const occupied = status => ['confirmado','concluido'].includes(status);
+  const occupied = status => ['pendente','em_contato','confirmado','concluido'].includes(status);
   const taken = (date,time,except='') => blocks.some(row=>row.date===date&&row.time===time&&row.blocked)
     || items.some(row=>row.preferredDate===date&&row.preferredTime===time&&row.protocol!==except&&occupied(row.status));
   const persist = () => { try { localStorage.setItem(key, JSON.stringify(items)); } catch {} };
@@ -38,7 +38,7 @@ window.THAIS_DEMO = true;
     if(url.pathname==='/api/admin/agenda/slot'&&options.method==='PATCH') {
       const input=JSON.parse(options.body);let block=blocks.find(row=>row.date===input.date&&row.time===input.time);
       if((block?.version||0)!==input.expectedVersion)return response({message:'Este horário foi alterado. Atualize a agenda.'},409);
-      if(input.blocked&&items.some(row=>row.preferredDate===input.date&&row.preferredTime===input.time&&occupied(row.status)))return response({message:'Há um atendimento confirmado neste horário.'},409);
+      if(input.blocked&&items.some(row=>row.preferredDate===input.date&&row.preferredTime===input.time&&occupied(row.status)))return response({message:'Há um pedido em andamento neste horário. Reagende ou cancele antes de bloquear.'},409);
       if(!block){block={date:input.date,time:input.time,version:0};blocks.push(block);}
       Object.assign(block,{blocked:input.blocked,reason:input.reason,version:block.version+1});persistBlocks();
       return response({message:input.blocked?'Horário bloqueado nesta demonstração.':'Horário liberado nesta demonstração.'});

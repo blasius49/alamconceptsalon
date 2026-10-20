@@ -39,12 +39,12 @@ test('agenda Supabase: bloqueio persistente, disponibilidade pública sem dados 
  }finally{await f.close();}
 });
 
-test('confirmação e reagendamento Supabase são atômicos: só um confirmado por vaga, histórico e protocolo preservados',async()=>{
+test('confirmação e reagendamento Supabase respeitam pedidos reservados, histórico e protocolo',async()=>{
  const f=await postgresFixture();try{
   const cookie=await login(f);const call=(route,body,method='GET')=>createCloudHandler({env:f.env,store:f.store})(request(route,body,method,cookie),{ip:'fixture'});
-  const original=booking();const first=await f.store.createBooking(original,false);const second=await f.store.createBooking(booking(),false);
+  const original=booking();const first=await f.store.createBooking(original,false);const second=await f.store.createBooking(booking('18:00'),false);
   const a=first.booking.protocol;const b=second.booking.protocol;
-  const results=await Promise.all([f.store.updateBookingStatus(a,'confirmado',1),f.store.updateBookingStatus(b,'confirmado',1)]);
+  const results=await Promise.all([f.store.updateBookingStatus(a,'confirmado',1),f.store.rescheduleBooking(b,{date:date(),time:'15:00',status:'confirmado',expectedVersion:1})]);
   assert.equal(results.filter(r=>r.booking).length,1);assert.equal(results.filter(r=>r.error==='unavailable').length,1);
   const winner=results[0].booking?a:b;const loser=winner===a?b:a;
   assert.equal((await f.store.setSlotBlock({date:date(),time:'15:00',blocked:true,reason:'',expectedVersion:0})).error,'occupied');
@@ -83,9 +83,9 @@ test('migração 003 aceita versão original e pode reaplicar sem apagar pedidos
 test('agenda local persiste bloqueios e reagendamentos, rejeita vaga ocupada e aceita reenvio idempotente',async()=>{
  const dir=await mkdtemp(path.join(tmpdir(),'thais-agenda-'));const file=path.join(dir,'agenda.sqlite');let db=openBookings(file);
  try{
-  const input=booking();const a=saveBooking(db,input).booking.protocol;const b=saveBooking(db,booking()).booking.protocol;
+  const input=booking();const a=saveBooking(db,input).booking.protocol;const b=saveBooking(db,booking('18:00')).booking.protocol;
   assert.ok(changeBooking(db,a,{status:'confirmado',expectedVersion:1}).booking);
-  assert.equal(changeBooking(db,b,{status:'confirmado',expectedVersion:1}).error,'unavailable');
+  assert.equal(changeBooking(db,b,{date:date(),time:'15:00',status:'confirmado',expectedVersion:1},{reschedule:true}).error,'unavailable');
   assert.equal(saveBooking(db,input).booking.protocol,a);
   assert.equal(saveBooking(db,booking()).error,'unavailable');
   assert.equal(setSlotBlock(db,{date:date(),time:'15:00',blocked:true,reason:'',expectedVersion:0}).error,'occupied');

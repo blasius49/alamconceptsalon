@@ -6,7 +6,7 @@ import { validateBooking } from '../lib/booking-input.mjs';
 import { runNotifications } from '../cloud/notifications.mjs';
 import { postgresFixture } from './helpers-postgres.mjs';
 const whatsEnv={WHATSAPP_ENABLED:'true',WHATSAPP_ACCESS_TOKEN:'token-ficticio-dos-testes',WHATSAPP_PHONE_NUMBER_ID:'123456',WHATSAPP_TEMPLATE_NAME:'aviso_agendamento',WHATSAPP_TEMPLATE_LANGUAGE:'pt_BR'};
-async function add(f,ready=true){const {data}=validateBooking({name:'TESTE cliente',phone:'47999990000',preferredDate:dateRange().max,preferredTime:'15:00',notes:'Teste isolado',consent:true,requestId:randomUUID()});return f.store.createBooking(data,ready);}
+async function add(f,ready=true){const count=(await f.db.query('SELECT count(*)::int AS n FROM salon_bookings')).rows[0].n;const {data}=validateBooking({name:'TESTE cliente',phone:'47999990000',preferredDate:dateRange().max,preferredTime:`${15+count}:00`,notes:'Teste isolado',consent:true,requestId:randomUUID()});return f.store.createBooking(data,ready);}
 
 test('fila em Postgres envia uma vez e mantém aceitação distinta de entrega',async()=>{
  const f=await postgresFixture();try{

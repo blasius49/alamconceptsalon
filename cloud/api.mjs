@@ -50,13 +50,15 @@ export function createCloudHandler({ env = process.env, store = new SupabaseStor
         const date=url.searchParams.get('date');
         if(!validDate(date,now()))return reply({message:'Escolha uma data entre hoje e os próximos 90 dias.'},422);
         if(!store.configured)return reply({message:'O agendamento online ainda está sendo configurado. Fale com a equipe pelo WhatsApp.'},503);
-        return reply({date,slots:freeSlots(date,await store.availability(date),now()),kind:'preference',timezone:'America/Sao_Paulo'});
+        const availability=await store.availability(date);
+        if(availability.reservationPolicy!=='request-v1')throw failure('Atualize o banco com o SQL 004-reservar-pedido-pendente.sql para reservar os horários ao receber pedidos.',503);
+        return reply({date,slots:freeSlots(date,availability,now()),kind:'preference',timezone:'America/Sao_Paulo'});
       }
       if (path === '/api/health' && request.method === 'GET') {
         const schedule={dateRange:dateRange(now()),schedule:WEEKLY_SCHEDULE,timezone:'America/Sao_Paulo'};
         if(!store.configured)return reply({status:'unconfigured',message:'A Function ainda não recebeu a URL e uma chave do Supabase em formato válido. Confira configuration e refaça o deploy após salvar as variáveis.',configuration:store.configuration,...schedule},503);
         const health = await store.health();
-        if(health?.status !== 'ok' || health?.tableAvailable !== true || !(health.schemaVersion >= 3))throw failure('Atualize o banco com o SQL 003-agenda-reagendamento.sql fornecido antes de receber pedidos.',503);
+        if(health?.status !== 'ok' || health?.tableAvailable !== true || !(health.schemaVersion >= 4))throw failure('Atualize o banco com o SQL 004-reservar-pedido-pendente.sql fornecido antes de receber pedidos.',503);
         return reply({status:'ok',backend:'netlify-supabase',schemaVersion:health.schemaVersion,...schedule});
       }
       if (path === '/api/admin/session') {
@@ -95,7 +97,7 @@ export function createCloudHandler({ env = process.env, store = new SupabaseStor
         if(!limit.allowed)return reply({message:'Muitas alterações. Aguarde um minuto.'},429);
         const result=await store.setSlotBlock(input);
         if(result.error==='conflict')return reply({message:'Outra pessoa alterou este horário. Atualize a agenda antes de tentar novamente.'},409);
-        if(result.error==='occupied')return reply({message:'Este horário tem um atendimento confirmado ou concluído. Reagende ou cancele o pedido antes de bloquear.'},409);
+        if(result.error==='occupied')return reply({message:'Este horário tem um pedido em andamento. Reagende, cancele ou marque como Reagendar antes de bloquear.'},409);
         if(result.error)return reply({message:'Este horário não pode mais ser alterado. Atualize a agenda.'},422);
         return reply({message:input.blocked?'Horário bloqueado no site.':'Horário liberado no site.'});
       }
@@ -124,7 +126,7 @@ export function createCloudHandler({ env = process.env, store = new SupabaseStor
         if(!limit.allowed)return reply({message:'Muitas alterações. Aguarde um minuto.'},429,{'Retry-After':String(limit.retryAfter)});
         const result=await store.updateBookingStatus(statusRoute[1],input.status,input.expectedVersion);
         if(result.error==='not_found')return reply({message:'Solicitação não encontrada.'},404);
-        if(result.error==='unavailable')return reply({message:'Este horário está bloqueado ou ocupado por outro cliente. Reagende o pedido antes de confirmar.'},409);
+        if(result.error==='unavailable')return reply({message:'Este horário está bloqueado ou reservado para outro pedido. Escolha outro horário antes de salvar.'},409);
         if(result.error==='conflict')return reply({message:'Outra pessoa alterou este pedido. A situação atual foi carregada; confira antes de salvar novamente.',booking:result.booking},409);
         return reply({...result,message:'Situação salva. Nenhuma mensagem foi enviada ao cliente.'});
       }

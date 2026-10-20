@@ -13,3 +13,5 @@
 /* A navegação do painel não herda o menu móvel do site público. */
 .panel-tabs{position:static;inset:auto;z-index:auto;padding:0;background:transparent}
 #booking-detail,#slot-detail{max-height:90dvh;overflow-y:auto;overscroll-behavior:contain}
+
+.agenda-slot.is-reserved .agenda-state{color:#8c6a2e}

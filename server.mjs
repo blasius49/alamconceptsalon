@@ -84,7 +84,7 @@ export function createApp({ database, limit = 20, admin = {}, whatsapp = {}, pub
           if(!validBlock(input))return json(res,422,{message:'Escolha um horário futuro de atendimento e um motivo de até 200 caracteres.'});
           const result=setSlotBlock(db,input);
           if(result.error==='conflict')return json(res,409,{message:'Outra pessoa alterou este horário. Atualize a agenda.'});
-          if(result.error==='occupied')return json(res,409,{message:'Este horário tem um atendimento confirmado ou concluído. Reagende ou cancele antes de bloquear.'});
+          if(result.error==='occupied')return json(res,409,{message:'Este horário tem um pedido em andamento. Reagende, cancele ou marque como Reagendar antes de bloquear.'});
           return json(res,200,{message:input.blocked?'Horário bloqueado no site.':'Horário liberado no site.'});
         }
         const rescheduleRoute=url.pathname.match(/^\/api\/admin\/bookings\/(TA-[A-F0-9]{12})\/reschedule$/);
@@ -107,7 +107,7 @@ export function createApp({ database, limit = 20, admin = {}, whatsapp = {}, pub
           if(!validStatusChange(input))return json(res,422,{message:'Escolha uma situação válida e atualize o pedido antes de salvar.'});
           const result=updateBookingStatus(db,statusRoute[1],input.status,input.expectedVersion);
           if(result.error==='not_found')return json(res,404,{message:'Solicitação não encontrada.'});
-          if(result.error==='unavailable')return json(res,409,{message:'Este horário está bloqueado ou ocupado por outro cliente. Reagende o pedido antes de confirmar.'});
+          if(result.error==='unavailable')return json(res,409,{message:'Este horário está bloqueado ou reservado para outro pedido. Escolha outro horário antes de salvar.'});
           if(result.error==='conflict')return json(res,409,{message:'Outra pessoa alterou este pedido. A situação atual foi carregada; confira antes de salvar novamente.',booking:result.booking});
           return json(res,200,{...result,message:'Situação salva. Nenhuma mensagem foi enviada ao cliente.'});
         }

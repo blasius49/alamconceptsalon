@@ -8,6 +8,7 @@ const refresh = document.querySelector('#refresh-bookings');
 const tbody = document.querySelector('#bookings-body');
 const filterForm = document.querySelector('#filter-form');
 const dialog = document.querySelector('#booking-detail');
+const holdsSlot = status => ['pendente','em_contato','confirmado','concluido'].includes(status);
 const labels = { pendente: 'Aguardando contato', em_contato: 'Em contato', confirmado: 'Confirmado', reagendar: 'Reagendar', concluido: 'Concluído', cancelado: 'Cancelado' };
 const statusForm = document.querySelector('#booking-status-form');
 const statusSelect = document.querySelector('#detail-status');
@@ -262,11 +263,13 @@ async function loadAgenda() {
       const row=element('article',`agenda-slot${slot.blocked?' is-blocked':''}${slot.occupied?' is-occupied':''}${slot.past?' is-past':''}`);
       const time=element('div','agenda-time',slot.time); time.append(element('small','',slot.label.split(' – ')[1]));
       const content=element('div','agenda-slot-content');
-      const state=slot.blocked?'Indisponível':slot.occupied?'Ocupado':slot.past?'Horário encerrado':!slot.editable?'Fora do período de agendamento':'Disponível';
+      const confirmed=slot.bookings.some(row=>['confirmado','concluido'].includes(row.status));
+      if(slot.occupied&&!confirmed)row.classList.add('is-reserved');
+      const state=slot.blocked?'Indisponível':slot.occupied?(confirmed?'Ocupado':'Reservado · aguardando confirmação'):slot.past?'Horário encerrado':!slot.editable?'Fora do período de agendamento':'Disponível';
       content.append(element('span','agenda-state',state));
       if(slot.reason && slot.blocked)content.append(element('p','agenda-reason',slot.reason));
       for(const booking of slot.bookings)content.append(bookingButton(booking));
-      if(slot.bookings.filter(b=>['confirmado','concluido'].includes(b.status)).length>1)content.append(element('p','status-error','Há mais de um atendimento neste horário. Confira e reagende os pedidos.'));
+      if(slot.bookings.filter(b=>holdsSlot(b.status)).length>1)content.append(element('p','status-error','Há pedidos antigos para a mesma vaga. Confira os protocolos e cancele ou reagende os duplicados.'));
       const action=element('div','agenda-slot-action');
       if(slot.editable&&!slot.occupied) {
         const button=element('button','row-button',slot.blocked?'Disponibilizar':'Bloquear');button.type='button';
@@ -337,11 +340,11 @@ async function loadRescheduleTimes(){
   rescheduleTime.disabled=true;rescheduleTime.replaceChildren(new Option('Carregando horários…',''));updateRescheduleSave();
   if(!rescheduleDate.value||!rescheduleDate.validity.valid){rescheduleTime.replaceChildren(new Option('Escolha uma data válida',''));return;}
   try{
-    // A agenda autenticada permite manter o próprio horário e exclui todos os outros clientes confirmados.
+    // A agenda autenticada permite manter o próprio horário e exclui todos os outros pedidos que reservam vagas.
     const response=await fetch(`/api/admin/agenda?date=${encodeURIComponent(rescheduleDate.value)}`,{cache:'no-store',signal:request.signal});
     if(response.status===401){showLogin();loginError.textContent='Sua sessão terminou. Entre novamente.';return;}
     const data=await response.json();if(!response.ok)throw new Error(data.message||'Não foi possível consultar horários.');
-    const slots=data.slots.filter(slot=>slot.editable&&!slot.past&&!slot.blocked&&!slot.bookings.some(row=>row.protocol!==selectedBooking?.protocol&&['confirmado','concluido'].includes(row.status)));
+    const slots=data.slots.filter(slot=>slot.editable&&!slot.past&&!slot.blocked&&!slot.bookings.some(row=>row.protocol!==selectedBooking?.protocol&&holdsSlot(row.status)));
     rescheduleTime.replaceChildren(new Option(slots.length?'Selecione um horário':'Sem horários disponíveis',''));
     for(const slot of slots)rescheduleTime.add(new Option(slot.label,slot.time));
     rescheduleTime.disabled=!slots.length;

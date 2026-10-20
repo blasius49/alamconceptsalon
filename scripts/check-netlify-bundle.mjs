@@ -12,10 +12,10 @@ try {
   const code=await readFile(outfile,'utf8');assert.ok(!code.includes('node:sqlite'),'Funções não podem carregar SQLite local');
   const module=await import(pathToFileURL(outfile));assert.equal(typeof module.default,'function');
   if(name==='api') {
-   const date=new Date();date.setUTCDate(date.getUTCDate()+7);const query=date.toISOString().slice(0,10);
-   const response=await module.default(new Request('https://salon.example/api/horarios?date='+query),{ip:'127.0.0.1'});
-   assert.equal(response.status,200);assert.ok((await response.json()).slots.length>0);
+   // Exercitar o bundle sem conectar ao banco, mesmo em um shell já configurado.
+   const response=await module.default(new Request('https://salon.example/api/horarios?date=invalid'),{ip:'127.0.0.1'});
+   assert.equal(response.status,422);assert.ok((await response.json()).message);
   } else assert.equal(module.config.schedule,'* * * * *');
  }
- console.log('Bundles Netlify executáveis, sem SQLite e com API de horários verificada. Nenhum deploy foi realizado.');
+ console.log('Bundles Netlify executáveis, sem SQLite e com validação da API de horários verificada. Nenhum deploy foi realizado.');
 } finally {await rm(dir,{recursive:true,force:true});}

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const target=path.join(root,'netlify-package');
-const files=['netlify.toml','package.json','package-lock.json','.gitignore','.env.example','README.md','DEPLOY-NETLIFY.md','index.html','style.css','script.js','admin.html','admin.css','admin.js','server.mjs','build.mjs'];
+const files=['netlify.toml','package.json','package-lock.json','.gitignore','.env.example','README.md','DEPLOY-NETLIFY.md','ATUALIZAR-SITUACAO.md','ATUALIZAR-AGENDA.md','index.html','style.css','script.js','admin.html','admin.css','admin.js','server.mjs','build.mjs'];
 const dirs=['cloud','netlify','supabase','lib','scripts','tests','demo','public'];
 async function copy(source,relative){
  const info=await stat(source);

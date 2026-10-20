@@ -1,0 +1,23 @@
+import { readFile, writeFile } from 'node:fs/promises';
+const read = file => readFile(new URL('../' + file, import.meta.url), 'utf8');
+const [html, css, script, adminHtml, adminCss, adminJs, schedule, api] = await Promise.all(['index.html','style.css','script.js','admin.html','admin.css','admin.js','lib/schedule.mjs','demo/api.js'].map(read));
+let page = html;
+const adminContent = adminHtml.split('<main class="admin-main">')[1].split('</main>')[0].replace('id="logout"','id="logout" hidden').replace('Os pedidos são consultados no banco do servidor. Atualização automática a cada 30 segundos enquanto o painel estiver aberto.', 'Nesta demonstração, os pedidos ficam apenas neste navegador. Não há conexão ao banco do servidor. Nenhum WhatsApp é enviado.').replaceAll('href="/#agendamento" target="_blank" rel="noopener"','href="#agendamento"');
+const detail = adminHtml.slice(adminHtml.indexOf('<dialog id="booking-detail"'), adminHtml.indexOf('<script src="/admin.js">')).replace('<div class="detail-notes">', '<div class="demo-message"><span>PRÉVIA DO WHATSAPP · NÃO ENVIADO</span><p id="demo-message-preview"></p></div><div class="detail-notes">');
+const demoCss = `.demo-banner{background:#f3e7c9;color:#614d23;padding:13px 6%;font:11px Arial,sans-serif;display:flex;gap:15px;align-items:center;justify-content:space-between;line-height:1.7}.demo-banner strong{display:block;letter-spacing:1px;font-size:10px}.demo-banner a{border:1px solid #bba77c;padding:8px 12px;white-space:nowrap}.demo-banner button{border:0;background:transparent;font-size:10px;text-decoration:underline;color:inherit;white-space:nowrap}.demo-actions{display:flex;gap:12px;align-items:center}.demo-message{background:#eef0e8;padding:16px;margin-top:24px}.demo-message span{font-size:8px;letter-spacing:1.3px}.demo-message p{font-size:12px;line-height:1.8;margin-top:12px}#painel{padding:45px 6%;width:100%;max-width:1500px;margin:auto}#painel .dashboard-heading h1{font-size:60px}@media(max-width:650px){.demo-banner{align-items:flex-start;flex-direction:column;font-size:10px;padding:12px 6%;gap:8px}#painel .dashboard-heading h1{font-size:44px}.demo-actions{width:100%;justify-content:space-between}.header-cta{display:none}}`;
+page = page.replace('<link rel="stylesheet" href="style.css">', `<style>${css}\n${adminCss}\n${demoCss}</style>`);
+page = page.replace('<body>', '<body><div class="demo-banner"><div><strong>DEMONSTRAÇÃO INTERATIVA</strong>Use dados fictícios. Pedidos só neste navegador · Sem servidor conectado · Nenhum WhatsApp enviado.</div><div class="demo-actions"><a href="#painel">Ver pedidos de teste</a><button id="demo-reset" type="button">Limpar teste</button></div></div>');
+page = page.replace('<a href="#galeria" data-nav="galeria">', '<a href="#painel" data-nav="painel">Painel de teste</a><a href="#galeria" data-nav="galeria">');
+page = page.replace('</main>', `<section data-view="painel" id="painel" hidden>${adminContent}</section></main>${detail}`);
+page = page.replace('href="/admin"', 'href="#painel"');
+page = page.replace('Abra a versão em execução ou fale com a equipe pelo WhatsApp.', 'Use a demonstração com dados fictícios.');
+const scheduleCode = schedule.replaceAll('export ', '');
+const helper = `window.THAIS_DEMO=true;\n(()=>{${scheduleCode}\n${api}\n})();`;
+const client = script.replace("['galeria', 'agendamento']", "['galeria', 'agendamento', 'painel']");
+page = page.replace('<script src="script.js"></script>', `<script>${helper}</script><script>(()=>{${client}\n})();</script><script>(()=>{${adminJs}\n})();</script>`);
+// Primeiro o adaptador local, depois os clientes. O adaptador nunca é carregado no site real.
+const helperTag = `<script>${helper}</script>`;
+page = page.replace(helperTag, '').replace('</head>', helperTag + '</head>');
+const target = process.argv[2] || new URL('../demo.html', import.meta.url);
+await writeFile(target, page);
+console.log('Demonstração criada. Dados locais de teste; sem conexão ao banco ou à Meta.');

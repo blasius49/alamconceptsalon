@@ -7,7 +7,7 @@
     "dev": "node --env-file-if-exists=.env server.mjs",
     "start": "node --env-file-if-exists=.env server.mjs",
     "build": "node build.mjs",
-    "check": "node --check server.mjs && node --check lib/bookings.mjs && node --check script.js && node --check scripts/bookings.mjs && node --check lib/admin.mjs && node --check admin.js && node --check scripts/admin-setup.mjs && node --check lib/schedule.mjs && node --check lib/whatsapp.mjs && node --check scripts/build-demo.mjs && node --check demo/api.js && node --check cloud/api.mjs && node --check cloud/store.mjs && node --check cloud/notifications.mjs && node --check netlify/functions/api.mjs && node --check netlify/functions/notifications.mjs && node --check scripts/build-netlify.mjs && node --check scripts/cloud-dev.mjs && node --check scripts/package-netlify.mjs",
+    "check": "node --check server.mjs && node --check lib/bookings.mjs && node --check script.js && node --check scripts/bookings.mjs && node --check lib/admin.mjs && node --check lib/agenda.mjs && node --check lib/agenda-sqlite.mjs && node --check admin.js && node --check scripts/admin-setup.mjs && node --check lib/schedule.mjs && node --check lib/whatsapp.mjs && node --check scripts/build-demo.mjs && node --check demo/api.js && node --check cloud/api.mjs && node --check cloud/store.mjs && node --check cloud/notifications.mjs && node --check netlify/functions/api.mjs && node --check netlify/functions/notifications.mjs && node --check scripts/build-netlify.mjs && node --check scripts/cloud-dev.mjs && node --check scripts/package-netlify.mjs",
     "test": "node --test tests/*.test.mjs",
     "agendamentos": "node scripts/bookings.mjs",
     "admin:setup": "node --env-file-if-exists=.env scripts/admin-setup.mjs",

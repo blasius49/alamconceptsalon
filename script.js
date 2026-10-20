@@ -148,6 +148,7 @@ form.addEventListener('submit', async event => {
     if (!response.ok) {
       showErrors(result.errors || {});
       feedback.textContent = result.message || 'Não foi possível enviar. Tente novamente.';
+      if (response.status === 409 && result.errors?.preferredTime) await loadTimes();
       if (!result.errors) feedback.focus();
       return;
     }
